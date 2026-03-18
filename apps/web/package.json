@@ -1,0 +1,18 @@
+{
+  "name": "@flashcards/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"Run Vite dev server here once dependencies are installed\"",
+    "build": "echo \"Run Vite build here\"",
+    "preview": "echo \"Run Vite preview here\""
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@flashcards/core": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
