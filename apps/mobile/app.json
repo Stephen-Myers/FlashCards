@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Flash Cards",
+    "slug": "flash-cards",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android"],
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Flash Cards to attach images to your cards."
+        }
+      ]
+    ]
+  }
+}

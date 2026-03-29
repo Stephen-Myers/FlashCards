@@ -1,18 +1,20 @@
 import React from "react";
 import { View, Text, Button, FlatList, TouchableOpacity } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
-import type { RootStackParamList } from "../App";
+import type { RootStackParamList } from "../navigationTypes";
 import type { Card, Deck } from "@flashcards/core";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "DeckDetail">;
+type DeckDetailRoute = RouteProp<RootStackParamList, "DeckDetail">;
 
 export const DeckDetailScreen: React.FC = () => {
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
-  const route = useRoute<any>();
-  const deckId: string = route.params.deckId;
+  const route = useRoute<DeckDetailRoute>();
+  const { deckId } = route.params;
 
   const [deck, setDeck] = React.useState<Deck | undefined>();
   const [cards, setCards] = React.useState<Card[]>([]);
@@ -45,10 +47,10 @@ export const DeckDetailScreen: React.FC = () => {
         <Button title="Add Card" onPress={() => navigation.navigate("CardEditor", { deckId })} />
         <Button title="Study" onPress={() => navigation.navigate("Review", { deckId })} />
       </View>
-      <FlatList
+      <FlatList<Card>
         data={cards}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        keyExtractor={(item: Card) => item.id}
+        renderItem={({ item }: { item: Card }) => (
           <TouchableOpacity
             onPress={() => navigation.navigate("CardEditor", { deckId, cardId: item.id })}
             style={{ paddingVertical: 8 }}

@@ -1,19 +1,36 @@
 import React from "react";
 import { View, Text, TextInput, Button, ScrollView, Image } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import { useStorage } from "../storageContext";
-import type { RootStackParamList } from "../App";
+import type { RootStackParamList } from "../navigationTypes";
 import type { Card } from "@flashcards/core";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "CardEditor">;
+type CardEditorRoute = RouteProp<RootStackParamList, "CardEditor">;
+
+function pickFirstAssetUri(result: ImagePicker.ImagePickerResult): string | undefined {
+  if ("canceled" in result && result.canceled) {
+    return undefined;
+  }
+  const legacy = result as ImagePicker.ImagePickerResult & { cancelled?: boolean; uri?: string };
+  if (legacy.cancelled) {
+    return undefined;
+  }
+  const fromAssets = legacy.assets?.[0]?.uri;
+  if (fromAssets) {
+    return fromAssets;
+  }
+  return legacy.uri;
+}
 
 export const CardEditorScreen: React.FC = () => {
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
-  const route = useRoute<any>();
-  const { deckId, cardId } = route.params as { deckId: string; cardId?: string };
+  const route = useRoute<CardEditorRoute>();
+  const { deckId, cardId } = route.params;
 
   const [frontText, setFrontText] = React.useState("");
   const [backText, setBackText] = React.useState("");
@@ -30,20 +47,19 @@ export const CardEditorScreen: React.FC = () => {
         setBackImageUri(card.backImageUri);
       }
     });
-  }, [cardId, storage.cards]);
+  }, [cardId, storage]);
 
   const pickImage = async (side: "front" | "back") => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8
     });
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      if (side === "front") {
-        setFrontImageUri(uri);
-      } else {
-        setBackImageUri(uri);
-      }
+    const uri = pickFirstAssetUri(result);
+    if (!uri) return;
+    if (side === "front") {
+      setFrontImageUri(uri);
+    } else {
+      setBackImageUri(uri);
     }
   };
 
@@ -74,8 +90,8 @@ export const CardEditorScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Text>Front</Text>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+      <Text style={{ marginBottom: 8 }}>Front</Text>
       <TextInput
         value={frontText}
         onChangeText={setFrontText}
@@ -86,18 +102,21 @@ export const CardEditorScreen: React.FC = () => {
           borderColor: "#ccc",
           padding: 8,
           borderRadius: 4,
-          minHeight: 80
+          minHeight: 80,
+          marginBottom: 12
         }}
       />
       <Button title={frontImageUri ? "Change front image" : "Add front image"} onPress={() => pickImage("front")} />
-      {frontImageUri && (
+      {frontImageUri ? (
         <Image
           source={{ uri: frontImageUri }}
-          style={{ width: "100%", height: 180, marginTop: 8, borderRadius: 8 }}
+          style={{ width: "100%", height: 180, marginTop: 8, marginBottom: 16, borderRadius: 8 }}
           resizeMode="contain"
         />
+      ) : (
+        <View style={{ height: 12 }} />
       )}
-      <Text>Back</Text>
+      <Text style={{ marginBottom: 8 }}>Back</Text>
       <TextInput
         value={backText}
         onChangeText={setBackText}
@@ -108,19 +127,21 @@ export const CardEditorScreen: React.FC = () => {
           borderColor: "#ccc",
           padding: 8,
           borderRadius: 4,
-          minHeight: 80
+          minHeight: 80,
+          marginBottom: 12
         }}
       />
       <Button title={backImageUri ? "Change back image" : "Add back image"} onPress={() => pickImage("back")} />
-      {backImageUri && (
+      {backImageUri ? (
         <Image
           source={{ uri: backImageUri }}
-          style={{ width: "100%", height: 180, marginTop: 8, borderRadius: 8 }}
+          style={{ width: "100%", height: 180, marginTop: 8, marginBottom: 16, borderRadius: 8 }}
           resizeMode="contain"
         />
+      ) : (
+        <View style={{ height: 12 }} />
       )}
       <Button title="Save" onPress={onSave} />
     </ScrollView>
   );
 };
-

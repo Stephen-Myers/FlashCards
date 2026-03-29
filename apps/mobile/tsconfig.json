@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@flashcards/core": ["../../packages/core/src/index.ts"],
+      "@flashcards/core/*": ["../../packages/core/src/*"]
+    }
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }

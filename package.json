@@ -6,7 +6,12 @@
     "packages/*",
     "apps/*"
   ],
+  "overrides": {
+    "expo": "51.0.39"
+  },
   "scripts": {
+    "dev:web": "npm run dev -w @flashcards/web",
+    "dev:mobile": "npm run start -w @flashcards/mobile",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces"

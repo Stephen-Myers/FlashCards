@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
 import type { Deck } from "@flashcards/core";
-import type { RootStackParamList } from "../App";
+import type { RootStackParamList } from "../navigationTypes";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "DeckList">;
 
@@ -32,10 +32,10 @@ export const DeckListScreen: React.FC = () => {
           navigation.navigate("DeckDetail", { deckId: id });
         }}
       />
-      <FlatList
+      <FlatList<Deck>
         data={decks}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        keyExtractor={(item: Deck) => item.id}
+        renderItem={({ item }: { item: Deck }) => (
           <TouchableOpacity
             onPress={() => navigation.navigate("DeckDetail", { deckId: item.id })}
             style={{ paddingVertical: 12 }}

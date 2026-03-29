@@ -6,13 +6,7 @@ import { DeckListScreen } from "./screens/DeckListScreen";
 import { DeckDetailScreen } from "./screens/DeckDetailScreen";
 import { CardEditorScreen } from "./screens/CardEditorScreen";
 import { ReviewScreen } from "./screens/ReviewScreen";
-
-export type RootStackParamList = {
-  DeckList: undefined;
-  DeckDetail: { deckId: string };
-  CardEditor: { deckId: string; cardId?: string };
-  Review: { deckId: string };
-};
+import type { RootStackParamList } from "./navigationTypes";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

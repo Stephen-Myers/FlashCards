@@ -1,19 +1,20 @@
 import React from "react";
 import { View, Text, Button, Image } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
-import type { RootStackParamList } from "../App";
+import type { RootStackParamList } from "../navigationTypes";
 import type { Card } from "@flashcards/core";
 import { isCardDue, getNextReview } from "@flashcards/core";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "Review">;
+type ReviewRoute = RouteProp<RootStackParamList, "Review">;
 
 export const ReviewScreen: React.FC = () => {
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
-  const route = useRoute<any>();
-  const { deckId } = route.params as { deckId: string };
+  const route = useRoute<ReviewRoute>();
+  const { deckId } = route.params;
 
   const [queue, setQueue] = React.useState<Card[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
@@ -26,7 +27,7 @@ export const ReviewScreen: React.FC = () => {
       setCurrentIndex(0);
       setShowBack(false);
     });
-  }, [storage.cards, deckId]);
+  }, [storage, deckId]);
 
   const current = queue[currentIndex];
 
@@ -55,8 +56,8 @@ export const ReviewScreen: React.FC = () => {
   }
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 16 }}>
-      <Text>
+    <View style={{ flex: 1, padding: 16 }}>
+      <Text style={{ marginBottom: 16 }}>
         {currentIndex + 1}/{queue.length}
       </Text>
       <View
@@ -67,8 +68,7 @@ export const ReviewScreen: React.FC = () => {
           borderWidth: 1,
           borderColor: "#ccc",
           borderRadius: 8,
-          padding: 16,
-          gap: 12
+          padding: 16
         }}
       >
         {showBack ? (
@@ -96,9 +96,11 @@ export const ReviewScreen: React.FC = () => {
         )}
       </View>
       {!showBack ? (
-        <Button title="Show Answer" onPress={() => setShowBack(true)} />
+        <View style={{ marginTop: 16 }}>
+          <Button title="Show Answer" onPress={() => setShowBack(true)} />
+        </View>
       ) : (
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 16 }}>
           <Button title="Again" onPress={() => handleRating("again")} />
           <Button title="Hard" onPress={() => handleRating("hard")} />
           <Button title="Good" onPress={() => handleRating("good")} />

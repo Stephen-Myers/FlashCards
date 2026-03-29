@@ -7,12 +7,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "jsx": "react-jsx",
-    "baseUrl": ".",
-    "paths": {
-      "@flashcards/core/*": [
-        "packages/core/src/*"
-      ]
-    }
+    "jsx": "react-jsx"
   }
 }
