@@ -8,5 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "lint": "echo \"no linter configured for core yet\"",
     "test": "echo \"no tests configured for core yet\""
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
   }
 }
