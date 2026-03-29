@@ -1,0 +1,12 @@
+{
+  "name": "@flashcards/core",
+  "version": "1.0.0",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo \"no linter configured for core yet\"",
+    "test": "echo \"no tests configured for core yet\""
+  }
+}

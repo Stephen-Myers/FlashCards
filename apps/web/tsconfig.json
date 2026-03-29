@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ES2019"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "baseUrl": ".",
+    "paths": {
+      "@flashcards/core": ["../../packages/core/src/index.ts"],
+      "@flashcards/core/*": ["../../packages/core/src/*"]
+    }
+  },
+  "include": ["src"]
+}
