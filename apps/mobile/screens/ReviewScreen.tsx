@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Button, Image } from "react-native";
+import { View, Text, Button, Image, TouchableOpacity } from "react-native";
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
@@ -60,7 +60,9 @@ export const ReviewScreen: React.FC = () => {
       <Text style={{ marginBottom: 16 }}>
         {currentIndex + 1}/{queue.length}
       </Text>
-      <View
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => setShowBack((prev) => !prev)}
         style={{
           flex: 1,
           alignItems: "center",
@@ -81,6 +83,7 @@ export const ReviewScreen: React.FC = () => {
               />
             )}
             <Text style={{ fontSize: 20, textAlign: "center" }}>{current.backText}</Text>
+            <Text style={{ fontSize: 14, color: "#888", marginTop: 12 }}>Tap to see question</Text>
           </>
         ) : (
           <>
@@ -92,9 +95,10 @@ export const ReviewScreen: React.FC = () => {
               />
             )}
             <Text style={{ fontSize: 20, textAlign: "center" }}>{current.frontText}</Text>
+            <Text style={{ fontSize: 14, color: "#888", marginTop: 12 }}>Tap to show answer</Text>
           </>
         )}
-      </View>
+      </TouchableOpacity>
       {!showBack ? (
         <View style={{ marginTop: 16 }}>
           <Button title="Show Answer" onPress={() => setShowBack(true)} />

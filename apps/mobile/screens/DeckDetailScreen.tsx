@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Button, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -18,12 +18,14 @@ export const DeckDetailScreen: React.FC = () => {
 
   const [deck, setDeck] = React.useState<Deck | undefined>();
   const [cards, setCards] = React.useState<Card[]>([]);
+  const [deckName, setDeckName] = React.useState("");
 
   const load = React.useCallback(async () => {
     const d = await storage.decks.getDeck(deckId);
     const c = await storage.cards.getCardsForDeck(deckId);
     setDeck(d);
     setCards(c);
+    if (d) setDeckName(d.name ?? "");
   }, [storage, deckId]);
 
   React.useEffect(() => {
@@ -40,9 +42,33 @@ export const DeckDetailScreen: React.FC = () => {
     );
   }
 
+  const saveDeckName = async () => {
+    const name = deckName.trim() || "Untitled deck";
+    await storage.decks.saveDeck({ ...deck, name });
+    setDeck({ ...deck, name });
+    setDeckName(name);
+  };
+
   return (
     <View style={{ flex: 1, padding: 16, gap: 12 }}>
-      <Text style={{ fontSize: 22, fontWeight: "600" }}>{deck.name || "Untitled deck"}</Text>
+      <Text style={{ marginBottom: 6, fontSize: 14, opacity: 0.7 }}>Deck name</Text>
+      <TextInput
+        value={deckName}
+        onChangeText={setDeckName}
+        onEndEditing={() => void saveDeckName()}
+        placeholder="Deck name"
+        style={{
+          fontSize: 20,
+          fontWeight: "600",
+          borderWidth: 1,
+          borderColor: "#ccc",
+          borderRadius: 6,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
+          marginBottom: 8
+        }}
+      />
+      <Button title="Save name" onPress={() => void saveDeckName()} />
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Button title="Add Card" onPress={() => navigation.navigate("CardEditor", { deckId })} />
         <Button title="Study" onPress={() => navigation.navigate("Review", { deckId })} />
