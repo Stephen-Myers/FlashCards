@@ -5,6 +5,7 @@ import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import { useStorage } from "../storageContext";
+import { useAppTheme } from "../themeContext";
 import type { RootStackParamList } from "../navigationTypes";
 import type { Card } from "@flashcards/core";
 
@@ -27,6 +28,7 @@ function pickFirstAssetUri(result: ImagePicker.ImagePickerResult): string | unde
 }
 
 export const CardEditorScreen: React.FC = () => {
+  const { colors } = useAppTheme();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
   const route = useRoute<CardEditorRoute>();
@@ -89,22 +91,30 @@ export const CardEditorScreen: React.FC = () => {
     navigation.goBack();
   };
 
+  const inputStyle = {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.inputSurface,
+    color: colors.text,
+    padding: 8,
+    borderRadius: 4,
+    minHeight: 80,
+    marginBottom: 12
+  };
+
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-      <Text style={{ marginBottom: 8 }}>Front</Text>
+    <ScrollView
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+    >
+      <Text style={{ marginBottom: 8, color: colors.text }}>Front</Text>
       <TextInput
         value={frontText}
         onChangeText={setFrontText}
         placeholder="Front text"
+        placeholderTextColor={colors.placeholder}
         multiline
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          padding: 8,
-          borderRadius: 4,
-          minHeight: 80,
-          marginBottom: 12
-        }}
+        style={inputStyle}
       />
       <Button title={frontImageUri ? "Change front image" : "Add front image"} onPress={() => pickImage("front")} />
       {frontImageUri ? (
@@ -116,20 +126,14 @@ export const CardEditorScreen: React.FC = () => {
       ) : (
         <View style={{ height: 12 }} />
       )}
-      <Text style={{ marginBottom: 8 }}>Back</Text>
+      <Text style={{ marginBottom: 8, color: colors.text }}>Back</Text>
       <TextInput
         value={backText}
         onChangeText={setBackText}
         placeholder="Back text"
+        placeholderTextColor={colors.placeholder}
         multiline
-        style={{
-          borderWidth: 1,
-          borderColor: "#ccc",
-          padding: 8,
-          borderRadius: 4,
-          minHeight: 80,
-          marginBottom: 12
-        }}
+        style={inputStyle}
       />
       <Button title={backImageUri ? "Change back image" : "Add back image"} onPress={() => pickImage("back")} />
       {backImageUri ? (

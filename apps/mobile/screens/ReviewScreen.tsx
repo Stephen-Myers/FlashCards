@@ -3,6 +3,7 @@ import { View, Text, Button, Image, TouchableOpacity } from "react-native";
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
+import { useAppTheme } from "../themeContext";
 import type { RootStackParamList } from "../navigationTypes";
 import type { Card } from "@flashcards/core";
 import { isCardDue, getNextReview } from "@flashcards/core";
@@ -11,6 +12,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, "Review">;
 type ReviewRoute = RouteProp<RootStackParamList, "Review">;
 
 export const ReviewScreen: React.FC = () => {
+  const { colors } = useAppTheme();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
   const route = useRoute<ReviewRoute>();
@@ -49,15 +51,23 @@ export const ReviewScreen: React.FC = () => {
 
   if (!current) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 16 }}>
-        <Text>No cards due right now.</Text>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
+          backgroundColor: colors.background
+        }}
+      >
+        <Text style={{ color: colors.text }}>No cards due right now.</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ marginBottom: 16 }}>
+    <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
+      <Text style={{ marginBottom: 16, color: colors.text }}>
         {currentIndex + 1}/{queue.length}
       </Text>
       <TouchableOpacity
@@ -68,9 +78,10 @@ export const ReviewScreen: React.FC = () => {
           alignItems: "center",
           justifyContent: "center",
           borderWidth: 1,
-          borderColor: "#ccc",
+          borderColor: colors.border,
           borderRadius: 8,
-          padding: 16
+          padding: 16,
+          backgroundColor: colors.inputSurface
         }}
       >
         {showBack ? (
@@ -82,8 +93,8 @@ export const ReviewScreen: React.FC = () => {
                 resizeMode="contain"
               />
             )}
-            <Text style={{ fontSize: 20, textAlign: "center" }}>{current.backText}</Text>
-            <Text style={{ fontSize: 14, color: "#888", marginTop: 12 }}>Tap to see question</Text>
+            <Text style={{ fontSize: 20, textAlign: "center", color: colors.text }}>{current.backText}</Text>
+            <Text style={{ fontSize: 14, color: colors.muted, marginTop: 12 }}>Tap to see question</Text>
           </>
         ) : (
           <>
@@ -94,8 +105,8 @@ export const ReviewScreen: React.FC = () => {
                 resizeMode="contain"
               />
             )}
-            <Text style={{ fontSize: 20, textAlign: "center" }}>{current.frontText}</Text>
-            <Text style={{ fontSize: 14, color: "#888", marginTop: 12 }}>Tap to show answer</Text>
+            <Text style={{ fontSize: 20, textAlign: "center", color: colors.text }}>{current.frontText}</Text>
+            <Text style={{ fontSize: 14, color: colors.muted, marginTop: 12 }}>Tap to show answer</Text>
           </>
         )}
       </TouchableOpacity>

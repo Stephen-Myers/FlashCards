@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
+import { useAppTheme } from "../themeContext";
 import type { RootStackParamList } from "../navigationTypes";
 import type { Card, Deck } from "@flashcards/core";
 
@@ -11,6 +12,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, "DeckDetail">;
 type DeckDetailRoute = RouteProp<RootStackParamList, "DeckDetail">;
 
 export const DeckDetailScreen: React.FC = () => {
+  const { colors } = useAppTheme();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
   const route = useRoute<DeckDetailRoute>();
@@ -36,8 +38,10 @@ export const DeckDetailScreen: React.FC = () => {
 
   if (!deck) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Text>Deck not found.</Text>
+      <View
+        style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}
+      >
+        <Text style={{ color: colors.text }}>Deck not found.</Text>
       </View>
     );
   }
@@ -50,18 +54,21 @@ export const DeckDetailScreen: React.FC = () => {
   };
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12 }}>
-      <Text style={{ marginBottom: 6, fontSize: 14, opacity: 0.7 }}>Deck name</Text>
+    <View style={{ flex: 1, padding: 16, gap: 12, backgroundColor: colors.background }}>
+      <Text style={{ marginBottom: 6, fontSize: 14, color: colors.textSecondary }}>Deck name</Text>
       <TextInput
         value={deckName}
         onChangeText={setDeckName}
         onEndEditing={() => void saveDeckName()}
         placeholder="Deck name"
+        placeholderTextColor={colors.placeholder}
         style={{
           fontSize: 20,
           fontWeight: "600",
+          color: colors.text,
+          backgroundColor: colors.inputSurface,
           borderWidth: 1,
-          borderColor: "#ccc",
+          borderColor: colors.border,
           borderRadius: 6,
           paddingHorizontal: 10,
           paddingVertical: 8,
@@ -81,12 +88,14 @@ export const DeckDetailScreen: React.FC = () => {
             onPress={() => navigation.navigate("CardEditor", { deckId, cardId: item.id })}
             style={{ paddingVertical: 8 }}
           >
-            <Text numberOfLines={1} style={{ fontSize: 16 }}>
+            <Text numberOfLines={1} style={{ fontSize: 16, color: colors.text }}>
               {item.frontText || "(no front text)"}
             </Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text>No cards yet. Add one to start studying.</Text>}
+        ListEmptyComponent={
+          <Text style={{ color: colors.textSecondary }}>No cards yet. Add one to start studying.</Text>
+        }
       />
     </View>
   );
