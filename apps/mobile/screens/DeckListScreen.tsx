@@ -1,23 +1,41 @@
 import React from "react";
-import { View, Text, FlatList, TouchableOpacity, Platform } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Platform,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Pressable,
+  Alert
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useStorage } from "../storageContext";
 import { useAppTheme } from "../themeContext";
+import { usePreferences } from "../preferencesContext";
 import type { Deck } from "@flashcards/core";
 import type { RootStackParamList } from "../navigationTypes";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "DeckList">;
 
 const FAB_BLUE = "#007AFF";
+const DESTRUCTIVE_RED = "#ff3b30";
+const FAB_SIZE = 68;
 
 export const DeckListScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { deckListDeleteMode } = usePreferences();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const [decks, setDecks] = React.useState<Deck[]>([]);
+  const [renameDeck, setRenameDeck] = React.useState<Deck | null>(null);
+  const [renameText, setRenameText] = React.useState("");
 
   const loadDecks = React.useCallback(() => {
     storage.decks.getAllDecks().then(setDecks);
@@ -43,6 +61,48 @@ export const DeckListScreen: React.FC = () => {
     navigation.navigate("DeckDetail", { deckId: id });
   }, [storage, navigation]);
 
+  const openRename = React.useCallback((deck: Deck) => {
+    setRenameDeck(deck);
+    setRenameText(deck.name ?? "");
+  }, []);
+
+  const closeRename = React.useCallback(() => {
+    setRenameDeck(null);
+    setRenameText("");
+  }, []);
+
+  const saveRename = React.useCallback(async () => {
+    if (!renameDeck) return;
+    const name = renameText.trim() || "Untitled deck";
+    await storage.decks.saveDeck({ ...renameDeck, name });
+    closeRename();
+    loadDecks();
+  }, [renameDeck, renameText, storage, closeRename, loadDecks]);
+
+  const confirmDeleteDeck = React.useCallback(
+    (deck: Deck) => {
+      const label = deck.name?.trim() || "Untitled deck";
+      Alert.alert(
+        "Delete deck",
+        `Remove “${label}” and all of its cards? This cannot be undone.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              void (async () => {
+                await storage.decks.deleteDeck(deck.id);
+                loadDecks();
+              })();
+            }
+          }
+        ]
+      );
+    },
+    [storage, loadDecks]
+  );
+
   const fabBottom = 24 + insets.bottom;
   const listGutter = 24;
 
@@ -55,23 +115,23 @@ export const DeckListScreen: React.FC = () => {
           paddingLeft: listGutter + insets.left,
           paddingRight: listGutter + insets.right,
           paddingTop: 16,
-          paddingBottom: fabBottom + 72
+          paddingBottom: fabBottom + FAB_SIZE + 16
         }}
         style={{ backgroundColor: colors.background }}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         renderItem={({ item }: { item: Deck }) => (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={`Open deck ${item.name || "Untitled deck"}`}
-            activeOpacity={0.75}
-            onPress={() => navigation.navigate("DeckDetail", { deckId: item.id })}
+          <View
             style={{
+              flexDirection: "row",
+              alignItems: "center",
               backgroundColor: colors.listItemButtonBg,
               borderWidth: 1,
               borderColor: colors.border,
               borderRadius: 14,
-              paddingVertical: 16,
-              paddingHorizontal: 16,
+              paddingVertical: 12,
+              paddingLeft: 16,
+              paddingRight: 8,
+              gap: 8,
               ...(Platform.OS === "android"
                 ? { elevation: 2 }
                 : {
@@ -82,10 +142,46 @@ export const DeckListScreen: React.FC = () => {
                   })
             }}
           >
-            <Text style={{ fontSize: 17, fontWeight: "600", color: colors.text }} numberOfLines={2}>
-              {item.name || "Untitled deck"}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={`Open deck ${item.name || "Untitled deck"}`}
+              activeOpacity={0.75}
+              onPress={() => navigation.navigate("DeckDetail", { deckId: item.id })}
+              style={{ flex: 1, minHeight: 44, justifyContent: "center" }}
+            >
+              <Text style={{ fontSize: 17, fontWeight: "600", color: colors.text }} numberOfLines={2}>
+                {item.name || "Untitled deck"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={
+                deckListDeleteMode
+                  ? `Delete deck ${item.name || "Untitled deck"}`
+                  : `Rename deck ${item.name || "Untitled deck"}`
+              }
+              onPress={() =>
+                deckListDeleteMode ? confirmDeleteDeck(item) : openRename(item)
+              }
+              style={{
+                padding: 10,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: deckListDeleteMode ? DESTRUCTIVE_RED : FAB_BLUE,
+                backgroundColor: colors.background,
+                minWidth: 44,
+                minHeight: 44,
+                alignItems: "center",
+                justifyContent: "center"
+              }}
+            >
+              <Ionicons
+                name={deckListDeleteMode ? "trash" : "pencil"}
+                size={22}
+                color={deckListDeleteMode ? DESTRUCTIVE_RED : FAB_BLUE}
+              />
+            </TouchableOpacity>
+          </View>
         )}
         ListEmptyComponent={
           <Text style={{ color: colors.textSecondary }}>No decks yet. Tap + below to create a deck.</Text>
@@ -107,9 +203,9 @@ export const DeckListScreen: React.FC = () => {
           onPress={() => void handleNewDeck()}
           activeOpacity={0.85}
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
+            width: FAB_SIZE,
+            height: FAB_SIZE,
+            borderRadius: FAB_SIZE / 2,
             backgroundColor: FAB_BLUE,
             alignItems: "center",
             justifyContent: "center",
@@ -126,16 +222,84 @@ export const DeckListScreen: React.FC = () => {
           <Text
             style={{
               color: "#ffffff",
-              fontSize: 32,
+              fontSize: 38,
               fontWeight: "300",
-              lineHeight: 34,
-              marginTop: Platform.OS === "ios" ? -1 : 0
+              lineHeight: 40,
+              marginTop: Platform.OS === "ios" ? -2 : 0
             }}
           >
             +
           </Text>
         </TouchableOpacity>
       </View>
+
+      <Modal visible={renameDeck != null} transparent animationType="fade" onRequestClose={closeRename}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, justifyContent: "center", padding: 24 }}
+        >
+          <Pressable
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.45)"
+            }}
+            onPress={closeRename}
+          />
+          <View
+            style={{
+              zIndex: 1,
+              backgroundColor: colors.inputSurface,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: 20
+            }}
+          >
+            <Text style={{ fontSize: 17, fontWeight: "600", color: colors.text, marginBottom: 12 }}>
+              Rename deck
+            </Text>
+            <TextInput
+              value={renameText}
+              onChangeText={setRenameText}
+              placeholder="Deck name"
+              placeholderTextColor={colors.placeholder}
+              autoFocus
+              autoCorrect={false}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                fontSize: 16,
+                color: colors.text,
+                backgroundColor: colors.background,
+                marginBottom: 16
+              }}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 12 }}>
+              <TouchableOpacity onPress={closeRename} style={{ paddingVertical: 10, paddingHorizontal: 16 }}>
+                <Text style={{ fontSize: 16, color: colors.textSecondary }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => void saveRename()}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  backgroundColor: FAB_BLUE,
+                  borderRadius: 8
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600", color: "#ffffff" }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };

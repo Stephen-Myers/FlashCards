@@ -58,9 +58,14 @@ export function createAsyncStorageProvider(): StorageProvider {
         await saveMap(DECKS_KEY, map);
       },
       async deleteDeck(id: string): Promise<void> {
-        const map = await loadMap<Deck>(DECKS_KEY);
-        map.delete(id);
-        await saveMap(DECKS_KEY, map);
+        const deckMap = await loadMap<Deck>(DECKS_KEY);
+        deckMap.delete(id);
+        await saveMap(DECKS_KEY, deckMap);
+        const cardMap = await loadMap<Card>(CARDS_KEY);
+        for (const [cardId, card] of cardMap.entries()) {
+          if (card.deckId === id) cardMap.delete(cardId);
+        }
+        await saveMap(CARDS_KEY, cardMap);
       }
     },
     cards: {

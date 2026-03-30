@@ -14,6 +14,7 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
+    "@expo/vector-icons": "~14.0.4",
     "@flashcards/core": "1.0.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/native": "^7.1.0",

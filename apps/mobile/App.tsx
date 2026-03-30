@@ -7,6 +7,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StorageProviderContext, createAsyncStorageProvider } from "./storageContext";
 import { ThemeProvider, useAppTheme } from "./themeContext";
+import { PreferencesProvider } from "./preferencesContext";
 import { DeckListScreen } from "./screens/DeckListScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { DeckDetailScreen } from "./screens/DeckDetailScreen";
@@ -74,7 +75,7 @@ function NavigationRoot() {
           })}
         />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
-        <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ title: "Deck" }} />
+        <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ title: "" }} />
         <Stack.Screen name="CardEditor" component={CardEditorScreen} options={{ title: "Edit Card" }} />
         <Stack.Screen name="Review" component={ReviewScreen} options={{ title: "Review" }} />
       </Stack.Navigator>
@@ -101,7 +102,9 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <AppShell />
+        <PreferencesProvider>
+          <AppShell />
+        </PreferencesProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

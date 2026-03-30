@@ -1,5 +1,4 @@
 const { getDefaultConfig } = require("expo/metro-config");
-const { resolve: metroResolve } = require("metro-resolver");
 const path = require("path");
 
 const projectRoot = __dirname;
@@ -13,15 +12,22 @@ config.resolver.nodeModulesPaths = [
 ];
 
 const coreEntry = path.resolve(workspaceRoot, "packages/core/src/index.ts");
-const previousResolveRequest = config.resolver.resolveRequest;
-config.resolver.resolveRequest = (context, realModuleName, platform, moduleName) => {
-  if (realModuleName === "@flashcards/core") {
+
+const upstreamResolveRequest = config.resolver.resolveRequest;
+
+config.resolver.resolveRequest = (context, moduleName, platform, ...rest) => {
+  if (moduleName === "@flashcards/core") {
     return { filePath: coreEntry, type: "sourceFile" };
   }
-  if (previousResolveRequest) {
-    return previousResolveRequest(context, realModuleName, platform, moduleName);
+  if (typeof upstreamResolveRequest === "function") {
+    return upstreamResolveRequest(context, moduleName, platform, ...rest);
   }
-  return metroResolve(context, realModuleName, platform);
+  if (context != null && typeof context.resolveRequest === "function") {
+    return context.resolveRequest(context, moduleName, platform);
+  }
+  throw new Error(
+    `[metro.config] Cannot resolve "${moduleName}": no upstream resolveRequest (Metro / Expo version mismatch).`
+  );
 };
 
 module.exports = config;

@@ -115,7 +115,7 @@ export const ReviewScreen: React.FC = () => {
           <Button title="Show Answer" onPress={() => setShowBack(true)} />
         </View>
       ) : (
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 16 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 16, flexWrap: "wrap", gap: 4 }}>
           <Button title="Again" onPress={() => handleRating("again")} />
           <Button title="Hard" onPress={() => handleRating("hard")} />
           <Button title="Good" onPress={() => handleRating("good")} />
@@ -125,4 +125,3 @@ export const ReviewScreen: React.FC = () => {
     </View>
   );
 };
-
