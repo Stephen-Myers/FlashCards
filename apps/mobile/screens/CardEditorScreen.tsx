@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, TextInput, Button, ScrollView, Image } from "react-native";
+import { View, Text, TextInput, ScrollView, Image, TouchableOpacity, Platform } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStorage } from "../storageContext";
 import { useAppTheme } from "../themeContext";
 import type { RootStackParamList } from "../navigationTypes";
@@ -11,6 +12,8 @@ import type { Card } from "@flashcards/core";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "CardEditor">;
 type CardEditorRoute = RouteProp<RootStackParamList, "CardEditor">;
+
+const FAB_BLUE = "#007AFF";
 
 function pickFirstAssetUri(result: ImagePicker.ImagePickerResult): string | undefined {
   if ("canceled" in result && result.canceled) {
@@ -29,6 +32,7 @@ function pickFirstAssetUri(result: ImagePicker.ImagePickerResult): string | unde
 
 export const CardEditorScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
   const route = useRoute<CardEditorRoute>();
@@ -102,11 +106,15 @@ export const CardEditorScreen: React.FC = () => {
     marginBottom: 12
   };
 
+  const saveBarPaddingBottom = 12 + insets.bottom;
+
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
       <Text style={{ marginBottom: 8, color: colors.text }}>Front</Text>
       <TextInput
         value={frontText}
@@ -116,7 +124,26 @@ export const CardEditorScreen: React.FC = () => {
         multiline
         style={inputStyle}
       />
-      <Button title={frontImageUri ? "Change front image" : "Add front image"} onPress={() => pickImage("front")} />
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={frontImageUri ? "Change front image" : "Add front image"}
+        onPress={() => void pickImage("front")}
+        activeOpacity={0.85}
+        style={{
+          paddingVertical: 12,
+          borderRadius: 10,
+          borderWidth: 2,
+          borderColor: FAB_BLUE,
+          backgroundColor: colors.listItemButtonBg,
+          alignItems: "center",
+          marginBottom: 8,
+          ...(Platform.OS === "android" ? { elevation: 1 } : {})
+        }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: "600", color: FAB_BLUE }}>
+          {frontImageUri ? "Change front image" : "Add front image"}
+        </Text>
+      </TouchableOpacity>
       {frontImageUri ? (
         <Image
           source={{ uri: frontImageUri }}
@@ -135,7 +162,26 @@ export const CardEditorScreen: React.FC = () => {
         multiline
         style={inputStyle}
       />
-      <Button title={backImageUri ? "Change back image" : "Add back image"} onPress={() => pickImage("back")} />
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={backImageUri ? "Change back image" : "Add back image"}
+        onPress={() => void pickImage("back")}
+        activeOpacity={0.85}
+        style={{
+          paddingVertical: 12,
+          borderRadius: 10,
+          borderWidth: 2,
+          borderColor: FAB_BLUE,
+          backgroundColor: colors.listItemButtonBg,
+          alignItems: "center",
+          marginBottom: 8,
+          ...(Platform.OS === "android" ? { elevation: 1 } : {})
+        }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: "600", color: FAB_BLUE }}>
+          {backImageUri ? "Change back image" : "Add back image"}
+        </Text>
+      </TouchableOpacity>
       {backImageUri ? (
         <Image
           source={{ uri: backImageUri }}
@@ -145,7 +191,34 @@ export const CardEditorScreen: React.FC = () => {
       ) : (
         <View style={{ height: 12 }} />
       )}
-      <Button title="Save" onPress={onSave} />
-    </ScrollView>
+      </ScrollView>
+
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          paddingBottom: saveBarPaddingBottom,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          backgroundColor: colors.background
+        }}
+      >
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Save card"
+          onPress={() => void onSave()}
+          activeOpacity={0.85}
+          style={{
+            paddingVertical: 14,
+            borderRadius: 10,
+            backgroundColor: FAB_BLUE,
+            alignItems: "center",
+            ...(Platform.OS === "android" ? { elevation: 2 } : {})
+          }}
+        >
+          <Text style={{ fontSize: 17, fontWeight: "600", color: "#ffffff" }}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };

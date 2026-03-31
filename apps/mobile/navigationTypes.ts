@@ -3,5 +3,5 @@ export type RootStackParamList = {
   Settings: undefined;
   DeckDetail: { deckId: string };
   CardEditor: { deckId: string; cardId?: string };
-  Review: { deckId: string };
+  Review: { deckId: string; combineGroupSize?: number; combineSeparator?: string };
 };

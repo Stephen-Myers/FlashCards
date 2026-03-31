@@ -1,12 +1,13 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useStorage } from "../storageContext";
 import { useAppTheme } from "../themeContext";
+import { usePreferences } from "../preferencesContext";
 import type { RootStackParamList } from "../navigationTypes";
 import type { Card } from "@flashcards/core";
-import { getNextReview, sortCardsByDueDate } from "@flashcards/core";
+import { getNextReview, shuffleStudyQueue, shuffleStudyQueueFully } from "@flashcards/core";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "Review">;
 type ReviewRoute = RouteProp<RootStackParamList, "Review">;
@@ -17,38 +18,114 @@ const OUTLINE_GOOD = "#ffcc00";
 const OUTLINE_EASY = "#34c759";
 const CARD_IMAGE_HEIGHT = 200;
 
+type QueuedCard = {
+  card: Card;
+  /** When true, this card opens on the back (answer) first — only used when Full mix is on. */
+  answerFirst: boolean;
+  /** Original card ids this slide updates (one id, or several for a combined session-only card). */
+  sourceCardIds: string[];
+};
+
+function mergeCardGroup(group: Card[], separator: string): Card {
+  const first = group[0];
+  const now = new Date().toISOString();
+  const id = `__session_combine__:${group.map((c) => c.id).join(":")}`;
+  return {
+    ...first,
+    id,
+    frontText: group.map((c) => c.frontText ?? "").join(separator),
+    backText: group.map((c) => c.backText ?? "").join(separator),
+    updatedAt: now
+  };
+}
+
+function buildStudyQueue(
+  cards: Card[],
+  studyFullMix: boolean,
+  combineGroupSize: number,
+  combineSeparator: string
+): QueuedCard[] {
+  const ordered = studyFullMix ? shuffleStudyQueueFully(cards) : shuffleStudyQueue(cards);
+  const size = Math.min(5, Math.max(1, combineGroupSize));
+  const sep = combineSeparator;
+
+  if (size <= 1) {
+    return ordered.map((card) => ({
+      card,
+      answerFirst: studyFullMix && Math.random() < 0.5,
+      sourceCardIds: [card.id]
+    }));
+  }
+
+  const result: QueuedCard[] = [];
+  for (let i = 0; i < ordered.length; i += size) {
+    const chunk = ordered.slice(i, i + size);
+    const answerFirst = studyFullMix && Math.random() < 0.5;
+    if (chunk.length === 1) {
+      result.push({
+        card: chunk[0],
+        answerFirst,
+        sourceCardIds: [chunk[0].id]
+      });
+    } else {
+      result.push({
+        card: mergeCardGroup(chunk, sep),
+        answerFirst,
+        sourceCardIds: chunk.map((c) => c.id)
+      });
+    }
+  }
+  return result;
+}
+
 export const ReviewScreen: React.FC = () => {
+  const { height: windowHeight } = useWindowDimensions();
   const { colors } = useAppTheme();
+  const { studyFullMix, studySessionMaxCards } = usePreferences();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
   const route = useRoute<ReviewRoute>();
-  const { deckId } = route.params;
+  const { deckId, combineGroupSize: combineGroupSizeParam, combineSeparator: combineSeparatorParam } = route.params;
+  const combineGroupSize = combineGroupSizeParam ?? 1;
+  const combineSeparator = combineSeparatorParam ?? "";
 
-  const [queue, setQueue] = React.useState<Card[]>([]);
+  const [queue, setQueue] = React.useState<QueuedCard[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [showBack, setShowBack] = React.useState(false);
+  /** Hard / Good / Easy stay hidden until the user taps the card; further taps do not hide them. */
+  const [ratingsVisible, setRatingsVisible] = React.useState(false);
   const [ratingCounts, setRatingCounts] = React.useState({ hard: 0, good: 0, easy: 0 });
   const [sessionComplete, setSessionComplete] = React.useState(false);
 
   React.useEffect(() => {
     storage.cards.getCardsForDeck(deckId).then((cards) => {
-      setQueue(sortCardsByDueDate(cards));
+      let built = buildStudyQueue(cards, studyFullMix, combineGroupSize, combineSeparator);
+      if (studySessionMaxCards != null && studySessionMaxCards > 0) {
+        built = built.slice(0, studySessionMaxCards);
+      }
+      setQueue(built);
       setCurrentIndex(0);
-      setShowBack(false);
+      setShowBack(built[0]?.answerFirst ?? false);
+      setRatingsVisible(false);
       setRatingCounts({ hard: 0, good: 0, easy: 0 });
       setSessionComplete(false);
     });
-  }, [storage, deckId]);
+  }, [storage, deckId, studyFullMix, studySessionMaxCards, combineGroupSize, combineSeparator]);
 
-  const current = queue[currentIndex];
+  const currentEntry = queue[currentIndex];
+  const currentCard = currentEntry?.card;
 
   const handleRating = async (rating: "hard" | "good" | "easy") => {
-    if (!current) {
+    if (!currentEntry || !currentCard) {
       navigation.goBack();
       return;
     }
-    const update = getNextReview(current, { type: rating });
-    await storage.cards.saveCard(update.updatedCard);
+    for (const id of currentEntry.sourceCardIds) {
+      const c = await storage.cards.getCard(id);
+      if (!c) continue;
+      const update = getNextReview(c, { type: rating });
+      await storage.cards.saveCard(update.updatedCard);
+    }
     setRatingCounts((prev) => ({ ...prev, [rating]: prev[rating] + 1 }));
     const nextIndex = currentIndex + 1;
     if (nextIndex >= queue.length) {
@@ -56,8 +133,14 @@ export const ReviewScreen: React.FC = () => {
       return;
     }
     setCurrentIndex(nextIndex);
-    setShowBack(false);
+    setShowBack(queue[nextIndex]?.answerFirst ?? false);
+    setRatingsVisible(false);
   };
+
+  const onCardPress = React.useCallback(() => {
+    setShowBack((prev) => !prev);
+    setRatingsVisible(true);
+  }, []);
 
   if (sessionComplete && queue.length > 0) {
     const total = queue.length;
@@ -134,7 +217,7 @@ export const ReviewScreen: React.FC = () => {
     );
   }
 
-  if (!current) {
+  if (!currentCard) {
     return (
       <View
         style={{
@@ -150,16 +233,21 @@ export const ReviewScreen: React.FC = () => {
     );
   }
 
+  const cardTapMinHeight = Math.max(
+    300,
+    Math.round(windowHeight * (ratingsVisible ? 0.4 : 0.62))
+  );
+
   return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
-      <Text style={{ marginBottom: 12, color: colors.text }}>
+    <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 8, backgroundColor: colors.background }}>
+      <Text style={{ marginBottom: 8, marginLeft: 4, color: colors.text, fontSize: 15 }}>
         {currentIndex + 1}/{queue.length}
       </Text>
 
       <View
         style={{
           flex: 1,
-          marginBottom: 16,
+          marginBottom: ratingsVisible ? 12 : 8,
           minHeight: 0,
           borderWidth: StyleSheet.hairlineWidth * 2,
           borderColor: colors.border,
@@ -170,100 +258,94 @@ export const ReviewScreen: React.FC = () => {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: "center",
-            padding: 16,
-            alignItems: "center",
-            paddingBottom: 12
-          }}
+          contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
         >
-          {showBack ? (
-            <>
-              {current.backImageUri && (
-                <Image
-                  source={{ uri: current.backImageUri }}
-                  style={{ width: "100%", height: CARD_IMAGE_HEIGHT, marginBottom: 8 }}
-                  resizeMode="contain"
-                />
-              )}
-              <Text style={{ fontSize: 20, textAlign: "center", color: colors.text }}>{current.backText}</Text>
-            </>
-          ) : (
-            <>
-              {current.frontImageUri && (
-                <Image
-                  source={{ uri: current.frontImageUri }}
-                  style={{ width: "100%", height: CARD_IMAGE_HEIGHT, marginBottom: 8 }}
-                  resizeMode="contain"
-                />
-              )}
-              <Text style={{ fontSize: 20, textAlign: "center", color: colors.text }}>{current.frontText}</Text>
-            </>
-          )}
-          {showBack ? (
-            <TouchableOpacity
-              onPress={() => setShowBack(false)}
-              hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
-              style={{ marginTop: 12, paddingVertical: 6 }}
-            >
-              <Text style={{ fontSize: 14, color: PRIMARY_BLUE, fontWeight: "600" }}>Show question</Text>
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={
+              !ratingsVisible
+                ? "Flip card and show difficulty options"
+                : showBack
+                  ? "Show question"
+                  : "Show answer"
+            }
+            activeOpacity={0.92}
+            onPress={onCardPress}
+            style={{
+              flexGrow: 1,
+              minHeight: cardTapMinHeight,
+              justifyContent: "center",
+              padding: 16,
+              alignItems: "center",
+              paddingBottom: 12
+            }}
+          >
+            {showBack ? (
+              <>
+                {currentCard.backImageUri && (
+                  <Image
+                    source={{ uri: currentCard.backImageUri }}
+                    style={{ width: "100%", height: CARD_IMAGE_HEIGHT, marginBottom: 8 }}
+                    resizeMode="contain"
+                  />
+                )}
+                <Text style={{ fontSize: 20, textAlign: "center", color: colors.text }}>{currentCard.backText}</Text>
+              </>
+            ) : (
+              <>
+                {currentCard.frontImageUri && (
+                  <Image
+                    source={{ uri: currentCard.frontImageUri }}
+                    style={{ width: "100%", height: CARD_IMAGE_HEIGHT, marginBottom: 8 }}
+                    resizeMode="contain"
+                  />
+                )}
+                <Text style={{ fontSize: 20, textAlign: "center", color: colors.text }}>{currentCard.frontText}</Text>
+              </>
+            )}
+            <Text style={{ fontSize: 13, color: colors.muted, marginTop: 14, textAlign: "center" }}>
+              {ratingsVisible
+                ? "Tap card to flip · Choose a rating below"
+                : "Tap card to flip and show Hard / Good / Easy"}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
 
-      <View>
-        {!showBack ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Show answer"
-            onPress={() => setShowBack(true)}
-            activeOpacity={0.85}
-            style={{
-              paddingVertical: 14,
-              borderRadius: 10,
-              backgroundColor: PRIMARY_BLUE,
-              alignItems: "center"
-            }}
-          >
-            <Text style={{ fontSize: 17, fontWeight: "600", color: "#ffffff" }}>Show answer</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
-            {[
-              { key: "hard", label: "Hard", rating: "hard" as const, outline: OUTLINE_HARD },
-              { key: "good", label: "Good", rating: "good" as const, outline: OUTLINE_GOOD },
-              { key: "easy", label: "Easy", rating: "easy" as const, outline: OUTLINE_EASY }
-            ].map(({ key, label, rating, outline }) => (
-              <TouchableOpacity
-                key={key}
-                accessibilityRole="button"
-                accessibilityLabel={label}
-                onPress={() => void handleRating(rating)}
-                activeOpacity={0.85}
-                style={{
-                  flex: 1,
-                  aspectRatio: 1,
-                  borderRadius: 12,
-                  backgroundColor: colors.listItemButtonBg,
-                  borderWidth: 2,
-                  borderColor: outline,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingHorizontal: 4
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, textAlign: "center" }}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
+      {ratingsVisible ? (
+        <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+          {[
+            { key: "hard", label: "Hard", rating: "hard" as const, outline: OUTLINE_HARD },
+            { key: "good", label: "Good", rating: "good" as const, outline: OUTLINE_GOOD },
+            { key: "easy", label: "Easy", rating: "easy" as const, outline: OUTLINE_EASY }
+          ].map(({ key, label, rating, outline }) => (
+            <TouchableOpacity
+              key={key}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              onPress={() => void handleRating(rating)}
+              activeOpacity={0.85}
+              style={{
+                flex: 1,
+                aspectRatio: 1,
+                borderRadius: 12,
+                backgroundColor: colors.listItemButtonBg,
+                borderWidth: 2,
+                borderColor: outline,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 4
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, textAlign: "center" }}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 };
