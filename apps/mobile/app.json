@@ -3,7 +3,7 @@
     "name": "Flash Cards",
     "slug": "flash-cards",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "userInterfaceStyle": "automatic",
     "platforms": ["ios", "android"],
     "plugins": [

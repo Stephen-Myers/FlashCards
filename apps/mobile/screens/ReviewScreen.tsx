@@ -12,10 +12,8 @@ import { getNextReview, shuffleStudyQueue, shuffleStudyQueueFully } from "@flash
 type Nav = NativeStackNavigationProp<RootStackParamList, "Review">;
 type ReviewRoute = RouteProp<RootStackParamList, "Review">;
 
-const PRIMARY_BLUE = "#007AFF";
-const OUTLINE_HARD = "#ff3b30";
-const OUTLINE_GOOD = "#ffcc00";
-const OUTLINE_EASY = "#34c759";
+const OUTLINE_DIDNT_GET = "#ff3b30";
+const OUTLINE_GOT_IT = "#34c759";
 const CARD_IMAGE_HEIGHT = 200;
 
 type QueuedCard = {
@@ -79,8 +77,10 @@ function buildStudyQueue(
 }
 
 export const ReviewScreen: React.FC = () => {
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isLandscape = windowWidth > windowHeight;
   const { colors } = useAppTheme();
+  const FAB_COLOR = colors.accent;
   const { studyFullMix, studySessionMaxCards } = usePreferences();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
@@ -92,9 +92,9 @@ export const ReviewScreen: React.FC = () => {
   const [queue, setQueue] = React.useState<QueuedCard[]>([]);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [showBack, setShowBack] = React.useState(false);
-  /** Hard / Good / Easy stay hidden until the user taps the card; further taps do not hide them. */
+  /** Got it / Didn't get it stay hidden until the user taps the card; further taps do not hide them. */
   const [ratingsVisible, setRatingsVisible] = React.useState(false);
-  const [ratingCounts, setRatingCounts] = React.useState({ hard: 0, good: 0, easy: 0 });
+  const [ratingCounts, setRatingCounts] = React.useState({ gotIt: 0, didntGetIt: 0 });
   const [sessionComplete, setSessionComplete] = React.useState(false);
 
   React.useEffect(() => {
@@ -107,7 +107,7 @@ export const ReviewScreen: React.FC = () => {
       setCurrentIndex(0);
       setShowBack(built[0]?.answerFirst ?? false);
       setRatingsVisible(false);
-      setRatingCounts({ hard: 0, good: 0, easy: 0 });
+      setRatingCounts({ gotIt: 0, didntGetIt: 0 });
       setSessionComplete(false);
     });
   }, [storage, deckId, studyFullMix, studySessionMaxCards, combineGroupSize, combineSeparator]);
@@ -115,7 +115,7 @@ export const ReviewScreen: React.FC = () => {
   const currentEntry = queue[currentIndex];
   const currentCard = currentEntry?.card;
 
-  const handleRating = async (rating: "hard" | "good" | "easy") => {
+  const handleRating = async (rating: "hard" | "easy") => {
     if (!currentEntry || !currentCard) {
       navigation.goBack();
       return;
@@ -126,7 +126,11 @@ export const ReviewScreen: React.FC = () => {
       const update = getNextReview(c, { type: rating });
       await storage.cards.saveCard(update.updatedCard);
     }
-    setRatingCounts((prev) => ({ ...prev, [rating]: prev[rating] + 1 }));
+    setRatingCounts((prev) =>
+      rating === "easy"
+        ? { ...prev, gotIt: prev.gotIt + 1 }
+        : { ...prev, didntGetIt: prev.didntGetIt + 1 }
+    );
     const nextIndex = currentIndex + 1;
     if (nextIndex >= queue.length) {
       setSessionComplete(true);
@@ -142,13 +146,53 @@ export const ReviewScreen: React.FC = () => {
     setRatingsVisible(true);
   }, []);
 
+  const cardTapMinHeight = isLandscape
+    ? Math.max(88, Math.round(windowHeight * (ratingsVisible ? 0.28 : 0.42)))
+    : Math.max(300, Math.round(windowHeight * (ratingsVisible ? 0.4 : 0.62)));
+
+  const cardImageDisplayHeight = isLandscape
+    ? Math.min(CARD_IMAGE_HEIGHT, Math.max(72, Math.round(windowHeight * 0.24)))
+    : CARD_IMAGE_HEIGHT;
+
+  /** Bounded card panel height in landscape (short screen axis). */
+  const landscapeCardPanelHeight = Math.round(windowHeight * 0.46);
+
+  const ratingButtonStyle = isLandscape
+    ? {
+        flex: 1 as const,
+        minHeight: 52,
+        maxHeight: 64,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        alignItems: "center" as const,
+        justifyContent: "center" as const
+      }
+    : {
+        flex: 1 as const,
+        aspectRatio: 1 as const,
+        borderRadius: 12,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+        paddingHorizontal: 4
+      };
+
   if (sessionComplete && queue.length > 0) {
     const total = queue.length;
     const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
     const rows = [
-      { label: "Hard", count: ratingCounts.hard, percent: pct(ratingCounts.hard), color: OUTLINE_HARD },
-      { label: "Good", count: ratingCounts.good, percent: pct(ratingCounts.good), color: OUTLINE_GOOD },
-      { label: "Easy", count: ratingCounts.easy, percent: pct(ratingCounts.easy), color: OUTLINE_EASY }
+      {
+        label: "Got it",
+        count: ratingCounts.gotIt,
+        percent: pct(ratingCounts.gotIt),
+        color: OUTLINE_GOT_IT
+      },
+      {
+        label: "Didn't get it",
+        count: ratingCounts.didntGetIt,
+        percent: pct(ratingCounts.didntGetIt),
+        color: OUTLINE_DIDNT_GET
+      }
     ];
     return (
       <View
@@ -207,7 +251,7 @@ export const ReviewScreen: React.FC = () => {
             marginTop: 32,
             paddingVertical: 14,
             borderRadius: 10,
-            backgroundColor: PRIMARY_BLUE,
+            backgroundColor: FAB_COLOR,
             alignItems: "center"
           }}
         >
@@ -233,22 +277,34 @@ export const ReviewScreen: React.FC = () => {
     );
   }
 
-  const cardTapMinHeight = Math.max(
-    300,
-    Math.round(windowHeight * (ratingsVisible ? 0.4 : 0.62))
-  );
-
   return (
-    <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 8, backgroundColor: colors.background }}>
-      <Text style={{ marginBottom: 8, marginLeft: 4, color: colors.text, fontSize: 15 }}>
+    <View
+      style={{
+        flex: 1,
+        paddingHorizontal: isLandscape ? 22 : 12,
+        paddingTop: isLandscape ? 10 : 8,
+        paddingBottom: isLandscape ? 10 : 0,
+        backgroundColor: colors.background
+      }}
+    >
+      <Text
+        style={{
+          marginBottom: 8,
+          marginLeft: isLandscape ? 2 : 4,
+          color: colors.text,
+          fontSize: 15
+        }}
+      >
         {currentIndex + 1}/{queue.length}
       </Text>
 
       <View
         style={{
-          flex: 1,
+          flex: isLandscape ? 0 : 1,
+          flexGrow: isLandscape ? 0 : 1,
           marginBottom: ratingsVisible ? 12 : 8,
           minHeight: 0,
+          ...(isLandscape ? { height: landscapeCardPanelHeight } : {}),
           borderWidth: StyleSheet.hairlineWidth * 2,
           borderColor: colors.border,
           borderRadius: 12,
@@ -258,7 +314,7 @@ export const ReviewScreen: React.FC = () => {
       >
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={isLandscape ? { flexGrow: 0, paddingVertical: 4 } : { flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
         >
@@ -274,12 +330,12 @@ export const ReviewScreen: React.FC = () => {
             activeOpacity={0.92}
             onPress={onCardPress}
             style={{
-              flexGrow: 1,
+              flexGrow: isLandscape ? 0 : 1,
               minHeight: cardTapMinHeight,
               justifyContent: "center",
-              padding: 16,
+              padding: isLandscape ? 12 : 16,
               alignItems: "center",
-              paddingBottom: 12
+              paddingBottom: isLandscape ? 8 : 12
             }}
           >
             {showBack ? (
@@ -287,7 +343,7 @@ export const ReviewScreen: React.FC = () => {
                 {currentCard.backImageUri && (
                   <Image
                     source={{ uri: currentCard.backImageUri }}
-                    style={{ width: "100%", height: CARD_IMAGE_HEIGHT, marginBottom: 8 }}
+                    style={{ width: "100%", height: cardImageDisplayHeight, marginBottom: 8 }}
                     resizeMode="contain"
                   />
                 )}
@@ -298,7 +354,7 @@ export const ReviewScreen: React.FC = () => {
                 {currentCard.frontImageUri && (
                   <Image
                     source={{ uri: currentCard.frontImageUri }}
-                    style={{ width: "100%", height: CARD_IMAGE_HEIGHT, marginBottom: 8 }}
+                    style={{ width: "100%", height: cardImageDisplayHeight, marginBottom: 8 }}
                     resizeMode="contain"
                   />
                 )}
@@ -308,18 +364,30 @@ export const ReviewScreen: React.FC = () => {
             <Text style={{ fontSize: 13, color: colors.muted, marginTop: 14, textAlign: "center" }}>
               {ratingsVisible
                 ? "Tap card to flip · Choose a rating below"
-                : "Tap card to flip and show Hard / Good / Easy"}
+                : "Tap card to flip and show Got it / Didn't get it"}
             </Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
 
       {ratingsVisible ? (
-        <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 10,
+            alignItems: isLandscape ? "stretch" : "flex-start",
+            marginTop: isLandscape ? 4 : 0,
+            marginBottom: isLandscape ? 6 : 0
+          }}
+        >
           {[
-            { key: "hard", label: "Hard", rating: "hard" as const, outline: OUTLINE_HARD },
-            { key: "good", label: "Good", rating: "good" as const, outline: OUTLINE_GOOD },
-            { key: "easy", label: "Easy", rating: "easy" as const, outline: OUTLINE_EASY }
+            {
+              key: "didnt",
+              label: "Didn't get it",
+              rating: "hard" as const,
+              outline: OUTLINE_DIDNT_GET
+            },
+            { key: "got", label: "Got it", rating: "easy" as const, outline: OUTLINE_GOT_IT }
           ].map(({ key, label, rating, outline }) => (
             <TouchableOpacity
               key={key}
@@ -328,18 +396,20 @@ export const ReviewScreen: React.FC = () => {
               onPress={() => void handleRating(rating)}
               activeOpacity={0.85}
               style={{
-                flex: 1,
-                aspectRatio: 1,
-                borderRadius: 12,
+                ...ratingButtonStyle,
                 backgroundColor: colors.listItemButtonBg,
                 borderWidth: 2,
-                borderColor: outline,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 4
+                borderColor: outline
               }}
             >
-              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, textAlign: "center" }}>
+              <Text
+                style={{
+                  fontSize: isLandscape ? 15 : 16,
+                  fontWeight: "600",
+                  color: colors.text,
+                  textAlign: "center"
+                }}
+              >
                 {label}
               </Text>
             </TouchableOpacity>

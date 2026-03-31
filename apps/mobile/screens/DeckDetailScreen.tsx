@@ -11,7 +11,8 @@ import {
   Switch,
   StyleSheet,
   useWindowDimensions,
-  TextInput
+  TextInput,
+  ScrollView
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
@@ -27,8 +28,12 @@ import type { Card, Deck } from "@flashcards/core";
 type Nav = NativeStackNavigationProp<RootStackParamList, "DeckDetail">;
 type DeckDetailRoute = RouteProp<RootStackParamList, "DeckDetail">;
 
-const FAB_BLUE = "#007AFF";
 const FAB_SIZE = 68;
+
+/** Let deck dropdown modals rotate with the device (iOS defaults can lock modals to portrait). */
+const MODAL_SUPPORTED_ORIENTATIONS: Array<
+  "portrait" | "landscape" | "landscape-left" | "landscape-right" | "portrait-upside-down"
+> = ["portrait", "landscape-left", "landscape-right"];
 
 function BookIcon() {
   return (
@@ -40,6 +45,7 @@ function BookIcon() {
 
 export const DeckDetailScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const FAB_COLOR = colors.accent;
   const {
     studyFullMix,
     setStudyFullMix,
@@ -52,8 +58,8 @@ export const DeckDetailScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<DeckDetailRoute>();
   const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
-  const { deckId } = route.params;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { deckId, deckName: deckNameParam } = route.params;
 
   const [deck, setDeck] = React.useState<Deck | undefined>();
   const [cards, setCards] = React.useState<Card[]>([]);
@@ -70,19 +76,30 @@ export const DeckDetailScreen: React.FC = () => {
   }, [storage, deckId]);
 
   React.useEffect(() => {
+    setDeck(undefined);
+    setCards([]);
+  }, [deckId]);
+
+  React.useEffect(() => {
     const unsub = navigation.addListener("focus", load);
     load();
     return unsub;
   }, [navigation, load]);
 
+  const headerTitle =
+    deck != null
+      ? deck.name?.trim()
+        ? deck.name.trim()
+        : "Untitled deck"
+      : deckNameParam != null
+        ? deckNameParam.trim()
+          ? deckNameParam.trim()
+          : "Untitled deck"
+        : "Deck";
+
   React.useLayoutEffect(() => {
-    if (deck) {
-      const title = deck.name?.trim() ? deck.name.trim() : "Untitled deck";
-      navigation.setOptions({ title });
-    } else {
-      navigation.setOptions({ title: "Deck" });
-    }
-  }, [navigation, deck]);
+    navigation.setOptions({ title: headerTitle });
+  }, [navigation, headerTitle]);
 
   const closeDeckMenu = React.useCallback(() => setDeckMenuOpen(false), []);
   const closeCombineMenu = React.useCallback(() => setCombineMenuOpen(false), []);
@@ -123,6 +140,8 @@ export const DeckDetailScreen: React.FC = () => {
   const listHorizontalPadding = 32;
   const condensedColumnGap = 8;
   const condensedCellWidth = (windowWidth - listHorizontalPadding - condensedColumnGap) / 2;
+  /** Space under header strip + safe areas; scroll when tall panels would overflow in landscape. */
+  const deckDropdownMaxHeight = Math.max(220, windowHeight - insets.top - 56 - insets.bottom - 12);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -162,7 +181,7 @@ export const DeckDetailScreen: React.FC = () => {
                 minWidth: 20,
                 height: 20,
                 borderRadius: 10,
-                backgroundColor: FAB_BLUE,
+                backgroundColor: FAB_COLOR,
                 alignItems: "center",
                 justifyContent: "center"
               }}
@@ -193,7 +212,13 @@ export const DeckDetailScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <Modal visible={combineMenuOpen} transparent animationType="fade" onRequestClose={closeCombineMenu}>
+      <Modal
+        visible={combineMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCombineMenu}
+        supportedOrientations={MODAL_SUPPORTED_ORIENTATIONS}
+      >
         <View style={{ flex: 1 }}>
           <Pressable
             accessibilityRole="button"
@@ -208,16 +233,22 @@ export const DeckDetailScreen: React.FC = () => {
               left: 16 + insets.left,
               right: 16 + insets.right,
               maxWidth: 400,
+              maxHeight: deckDropdownMaxHeight,
               alignSelf: "center",
               width: "100%",
               borderRadius: 12,
               borderWidth: StyleSheet.hairlineWidth * 2,
               borderColor: colors.border,
               backgroundColor: colors.inputSurface,
-              padding: 16,
               ...(Platform.OS === "android" ? { elevation: 8 } : { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 })
             }}
           >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+            >
             <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text, marginBottom: 6 }}>Combine</Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 14 }}>
               Group this many cards into one longer card for the next study session only. Nothing new is saved to
@@ -236,8 +267,8 @@ export const DeckDetailScreen: React.FC = () => {
                     paddingHorizontal: 14,
                     borderRadius: 10,
                     borderWidth: 2,
-                    borderColor: combineGroupSize === n ? FAB_BLUE : colors.border,
-                    backgroundColor: combineGroupSize === n ? FAB_BLUE : colors.listItemButtonBg
+                    borderColor: combineGroupSize === n ? FAB_COLOR : colors.border,
+                    backgroundColor: combineGroupSize === n ? FAB_COLOR : colors.listItemButtonBg
                   }}
                 >
                   <Text
@@ -282,14 +313,21 @@ export const DeckDetailScreen: React.FC = () => {
               accessibilityLabel='Done'
               onPress={closeCombineMenu}
               activeOpacity={0.85}
-              style={{ paddingVertical: 12, borderRadius: 10, backgroundColor: FAB_BLUE, alignItems: 'center' }}
+              style={{ paddingVertical: 12, borderRadius: 10, backgroundColor: FAB_COLOR, alignItems: 'center' }}
             >
               <Text style={{ fontSize: 16, fontWeight: '600', color: '#ffffff' }}>Done</Text>
             </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
-      <Modal visible={deckMenuOpen} transparent animationType="fade" onRequestClose={closeDeckMenu}>
+      <Modal
+        visible={deckMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeDeckMenu}
+        supportedOrientations={MODAL_SUPPORTED_ORIENTATIONS}
+      >
         <View style={{ flex: 1 }}>
           <Pressable
             accessibilityRole="button"
@@ -303,14 +341,20 @@ export const DeckDetailScreen: React.FC = () => {
               top: insets.top + 52,
               right: 16 + insets.right,
               width: Math.min(320, windowWidth - 32),
+              maxHeight: deckDropdownMaxHeight,
               borderRadius: 12,
               borderWidth: StyleSheet.hairlineWidth * 2,
               borderColor: colors.border,
               backgroundColor: colors.inputSurface,
-              paddingVertical: 8,
               ...(Platform.OS === "android" ? { elevation: 8 } : { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 })
             }}
           >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
+              contentContainerStyle={{ paddingVertical: 8 }}
+            >
             <View
               style={{
                 flexDirection: "row",
@@ -401,6 +445,7 @@ export const DeckDetailScreen: React.FC = () => {
                 }}
               />
             </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -415,7 +460,7 @@ export const DeckDetailScreen: React.FC = () => {
           marginTop: 8,
           marginBottom: 12,
           borderRadius: 12,
-          backgroundColor: FAB_BLUE,
+          backgroundColor: FAB_COLOR,
           paddingVertical: 14,
           alignItems: "center",
           justifyContent: "center",
@@ -483,7 +528,7 @@ export const DeckDetailScreen: React.FC = () => {
                       paddingHorizontal: 8,
                       borderRadius: 8,
                       borderWidth: 1,
-                      borderColor: FAB_BLUE,
+                      borderColor: FAB_COLOR,
                       backgroundColor: colors.background,
                       minWidth: 36,
                       minHeight: 36,
@@ -491,7 +536,7 @@ export const DeckDetailScreen: React.FC = () => {
                       justifyContent: "center"
                     }}
                   >
-                    <Ionicons name="pencil" size={18} color={FAB_BLUE} />
+                    <Ionicons name="pencil" size={18} color={FAB_COLOR} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
@@ -549,7 +594,7 @@ export const DeckDetailScreen: React.FC = () => {
                     paddingHorizontal: 10,
                     borderRadius: 8,
                     borderWidth: 1,
-                    borderColor: FAB_BLUE,
+                    borderColor: FAB_COLOR,
                     backgroundColor: colors.background,
                     minWidth: 44,
                     minHeight: 44,
@@ -557,7 +602,7 @@ export const DeckDetailScreen: React.FC = () => {
                     justifyContent: "center"
                   }}
                 >
-                  <Ionicons name="pencil" size={22} color={FAB_BLUE} />
+                  <Ionicons name="pencil" size={22} color={FAB_COLOR} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -614,7 +659,7 @@ export const DeckDetailScreen: React.FC = () => {
             width: FAB_SIZE,
             height: FAB_SIZE,
             borderRadius: FAB_SIZE / 2,
-            backgroundColor: FAB_BLUE,
+            backgroundColor: FAB_COLOR,
             alignItems: "center",
             justifyContent: "center",
             ...(Platform.OS === "ios"

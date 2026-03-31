@@ -25,7 +25,7 @@ function NavigationRoot() {
       ...(isDark ? DarkTheme : DefaultTheme),
       colors: {
         ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
-        primary: colors.headerTint,
+        primary: colors.accent,
         background: colors.background,
         card: colors.headerBg,
         text: colors.text,

@@ -23,12 +23,12 @@ import type { RootStackParamList } from "../navigationTypes";
 
 type Nav = NativeStackNavigationProp<RootStackParamList, "DeckList">;
 
-const FAB_BLUE = "#007AFF";
 const DESTRUCTIVE_RED = "#ff3b30";
 const FAB_SIZE = 68;
 
 export const DeckListScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const FAB_COLOR = colors.accent;
   const { deckListDeleteMode } = usePreferences();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
@@ -58,7 +58,7 @@ export const DeckListScreen: React.FC = () => {
       createdAt: now,
       updatedAt: now
     });
-    navigation.navigate("DeckDetail", { deckId: id });
+    navigation.navigate("DeckDetail", { deckId: id, deckName: "New deck" });
   }, [storage, navigation]);
 
   const openRename = React.useCallback((deck: Deck) => {
@@ -146,7 +146,12 @@ export const DeckListScreen: React.FC = () => {
               accessibilityRole="button"
               accessibilityLabel={`Open deck ${item.name || "Untitled deck"}`}
               activeOpacity={0.75}
-              onPress={() => navigation.navigate("DeckDetail", { deckId: item.id })}
+              onPress={() =>
+                navigation.navigate("DeckDetail", {
+                  deckId: item.id,
+                  deckName: item.name?.trim() ? item.name.trim() : "Untitled deck"
+                })
+              }
               style={{ flex: 1, minHeight: 44, justifyContent: "center" }}
             >
               <Text style={{ fontSize: 17, fontWeight: "600", color: colors.text }} numberOfLines={2}>
@@ -167,7 +172,7 @@ export const DeckListScreen: React.FC = () => {
                 padding: 10,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: deckListDeleteMode ? DESTRUCTIVE_RED : FAB_BLUE,
+                borderColor: deckListDeleteMode ? DESTRUCTIVE_RED : FAB_COLOR,
                 backgroundColor: colors.background,
                 minWidth: 44,
                 minHeight: 44,
@@ -178,7 +183,7 @@ export const DeckListScreen: React.FC = () => {
               <Ionicons
                 name={deckListDeleteMode ? "trash" : "pencil"}
                 size={22}
-                color={deckListDeleteMode ? DESTRUCTIVE_RED : FAB_BLUE}
+                color={deckListDeleteMode ? DESTRUCTIVE_RED : FAB_COLOR}
               />
             </TouchableOpacity>
           </View>
@@ -206,7 +211,7 @@ export const DeckListScreen: React.FC = () => {
             width: FAB_SIZE,
             height: FAB_SIZE,
             borderRadius: FAB_SIZE / 2,
-            backgroundColor: FAB_BLUE,
+            backgroundColor: FAB_COLOR,
             alignItems: "center",
             justifyContent: "center",
             ...(Platform.OS === "android"
@@ -290,7 +295,7 @@ export const DeckListScreen: React.FC = () => {
                 style={{
                   paddingVertical: 10,
                   paddingHorizontal: 16,
-                  backgroundColor: FAB_BLUE,
+                  backgroundColor: FAB_COLOR,
                   borderRadius: 8
                 }}
               >

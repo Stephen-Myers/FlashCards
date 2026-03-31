@@ -25,7 +25,7 @@ export const Review: React.FC<Props> = ({ deckId, onDone }) => {
 
   const current = queue[currentIndex];
 
-  const handleRating = async (rating: "again" | "hard" | "good" | "easy") => {
+  const handleRating = async (rating: "hard" | "easy") => {
     if (!current) {
       onDone();
       return;
@@ -74,10 +74,38 @@ export const Review: React.FC<Props> = ({ deckId, onDone }) => {
         <button onClick={() => setShowBack(true)}>Show Answer</button>
       ) : (
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-          <button onClick={() => handleRating("again")}>Again</button>
-          <button onClick={() => handleRating("hard")}>Hard</button>
-          <button onClick={() => handleRating("good")}>Good</button>
-          <button onClick={() => handleRating("easy")}>Easy</button>
+          <button
+            type="button"
+            onClick={() => handleRating("hard")}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 600,
+              color: "#fff",
+              background: "#ff3b30",
+              cursor: "pointer"
+            }}
+          >
+            Didn&apos;t get it
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRating("easy")}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              border: "none",
+              borderRadius: 8,
+              fontWeight: 600,
+              color: "#fff",
+              background: "#34c759",
+              cursor: "pointer"
+            }}
+          >
+            Got it
+          </button>
         </div>
       )}
     </div>

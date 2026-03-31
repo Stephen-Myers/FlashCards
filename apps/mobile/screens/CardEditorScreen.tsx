@@ -13,7 +13,6 @@ import type { Card } from "@flashcards/core";
 type Nav = NativeStackNavigationProp<RootStackParamList, "CardEditor">;
 type CardEditorRoute = RouteProp<RootStackParamList, "CardEditor">;
 
-const FAB_BLUE = "#007AFF";
 
 function pickFirstAssetUri(result: ImagePicker.ImagePickerResult): string | undefined {
   if ("canceled" in result && result.canceled) {
@@ -32,6 +31,7 @@ function pickFirstAssetUri(result: ImagePicker.ImagePickerResult): string | unde
 
 export const CardEditorScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const FAB_COLOR = colors.accent;
   const insets = useSafeAreaInsets();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
@@ -133,14 +133,14 @@ export const CardEditorScreen: React.FC = () => {
           paddingVertical: 12,
           borderRadius: 10,
           borderWidth: 2,
-          borderColor: FAB_BLUE,
+          borderColor: FAB_COLOR,
           backgroundColor: colors.listItemButtonBg,
           alignItems: "center",
           marginBottom: 8,
           ...(Platform.OS === "android" ? { elevation: 1 } : {})
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: FAB_BLUE }}>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: FAB_COLOR }}>
           {frontImageUri ? "Change front image" : "Add front image"}
         </Text>
       </TouchableOpacity>
@@ -171,14 +171,14 @@ export const CardEditorScreen: React.FC = () => {
           paddingVertical: 12,
           borderRadius: 10,
           borderWidth: 2,
-          borderColor: FAB_BLUE,
+          borderColor: FAB_COLOR,
           backgroundColor: colors.listItemButtonBg,
           alignItems: "center",
           marginBottom: 8,
           ...(Platform.OS === "android" ? { elevation: 1 } : {})
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: FAB_BLUE }}>
+        <Text style={{ fontSize: 16, fontWeight: "600", color: FAB_COLOR }}>
           {backImageUri ? "Change back image" : "Add back image"}
         </Text>
       </TouchableOpacity>
@@ -211,7 +211,7 @@ export const CardEditorScreen: React.FC = () => {
           style={{
             paddingVertical: 14,
             borderRadius: 10,
-            backgroundColor: FAB_BLUE,
+            backgroundColor: FAB_COLOR,
             alignItems: "center",
             ...(Platform.OS === "android" ? { elevation: 2 } : {})
           }}
