@@ -88,7 +88,7 @@ Check out the demo here:
 
 ---
 
-## Getting Started (Optional Section)
+## Getting Started
 
 ```bash
 # Install dependencies
