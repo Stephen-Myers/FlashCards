@@ -75,7 +75,7 @@ This project was built using:
 ## Demo
 
 Check out the demo here:  
-👉 https://youtu.be/7mTUa0XaDUE
+https://youtu.be/7mTUa0XaDUE
 
 ---
 
