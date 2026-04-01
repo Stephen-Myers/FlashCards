@@ -5,14 +5,18 @@
     "version": "1.0.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "plugins": [
       [
         "expo-image-picker",
         {
           "photosPermission": "Allow Flash Cards to attach images to your cards."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

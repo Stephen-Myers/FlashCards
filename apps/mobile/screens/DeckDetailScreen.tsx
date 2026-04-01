@@ -18,7 +18,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useStorage } from "../storageContext";
 import { useAppTheme } from "../themeContext";
 import { usePreferences } from "../preferencesContext";
@@ -52,7 +52,13 @@ export const DeckDetailScreen: React.FC = () => {
     deckDetailCondensedCards,
     setDeckDetailCondensedCards,
     studySessionMaxCards,
-    setStudySessionMaxCards
+    setStudySessionMaxCards,
+    studyTypeItIn,
+    setStudyTypeItIn,
+    studyReverseSides,
+    setStudyReverseSides,
+    studyTimedMode,
+    setStudyTimedMode
   } = usePreferences();
   const storage = useStorage();
   const navigation = useNavigation<Nav>();
@@ -173,7 +179,7 @@ export const DeckDetailScreen: React.FC = () => {
           }}
         >
           <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>Combine</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.text} />
+          <MaterialIcons name="expand-more" size={22} color={colors.text} />
           {combineGroupSize > 1 ? (
             <View
               style={{
@@ -208,7 +214,7 @@ export const DeckDetailScreen: React.FC = () => {
           }}
         >
           <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>Options</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.text} />
+          <MaterialIcons name="expand-more" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -374,7 +380,7 @@ export const DeckDetailScreen: React.FC = () => {
                 onValueChange={(v) => {
                   setStudyFullMix(v);
                 }}
-                trackColor={{ false: colors.border, true: "#34c759" }}
+                trackColor={{ false: colors.border, true: FAB_COLOR }}
                 thumbColor={Platform.OS === "android" ? (studyFullMix ? "#f2f2f7" : "#ffffff") : undefined}
                 ios_backgroundColor={colors.border}
               />
@@ -394,10 +400,81 @@ export const DeckDetailScreen: React.FC = () => {
                 accessibilityLabel="Toggle condensed card grid on deck detail"
                 value={deckDetailCondensedCards}
                 onValueChange={setDeckDetailCondensedCards}
-                trackColor={{ false: colors.border, true: "#34c759" }}
+                trackColor={{ false: colors.border, true: FAB_COLOR }}
                 thumbColor={
                   Platform.OS === "android" ? (deckDetailCondensedCards ? "#f2f2f7" : "#ffffff") : undefined
                 }
+                ios_backgroundColor={colors.border}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                gap: 12,
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: colors.border
+              }}
+            >
+              <Text style={{ flex: 1, fontSize: 16, color: colors.text, fontWeight: "500" }}>Type it in</Text>
+              <Switch
+                accessibilityLabel="Toggle type-in study mode"
+                value={studyTypeItIn}
+                onValueChange={setStudyTypeItIn}
+                trackColor={{ false: colors.border, true: FAB_COLOR }}
+                thumbColor={Platform.OS === "android" ? (studyTypeItIn ? "#f2f2f7" : "#ffffff") : undefined}
+                ios_backgroundColor={colors.border}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                gap: 12,
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: colors.border
+              }}
+            >
+              <Text style={{ flex: 1, fontSize: 16, color: colors.text, fontWeight: "500" }}>Reverse</Text>
+              <Switch
+                accessibilityLabel="Swap front and back for study"
+                value={studyReverseSides}
+                onValueChange={setStudyReverseSides}
+                trackColor={{ false: colors.border, true: FAB_COLOR }}
+                thumbColor={Platform.OS === "android" ? (studyReverseSides ? "#f2f2f7" : "#ffffff") : undefined}
+                ios_backgroundColor={colors.border}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                gap: 12,
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: colors.border
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, color: colors.text, fontWeight: "500" }}>Timed mode</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
+                  After study: Easy / Normal / Hard from your speed vs session average. Correctness is shown too.
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel="Toggle timed study mode"
+                value={studyTimedMode}
+                onValueChange={setStudyTimedMode}
+                trackColor={{ false: colors.border, true: FAB_COLOR }}
+                thumbColor={Platform.OS === "android" ? (studyTimedMode ? "#f2f2f7" : "#ffffff") : undefined}
                 ios_backgroundColor={colors.border}
               />
             </View>
@@ -527,8 +604,8 @@ export const DeckDetailScreen: React.FC = () => {
                       paddingVertical: 6,
                       paddingHorizontal: 8,
                       borderRadius: 8,
-                      borderWidth: 1,
-                      borderColor: FAB_COLOR,
+                      borderWidth: StyleSheet.hairlineWidth * 2,
+                      borderColor: colors.border,
                       backgroundColor: colors.background,
                       minWidth: 36,
                       minHeight: 36,
@@ -536,7 +613,7 @@ export const DeckDetailScreen: React.FC = () => {
                       justifyContent: "center"
                     }}
                   >
-                    <Ionicons name="pencil" size={18} color={FAB_COLOR} />
+                    <MaterialIcons name="edit" size={20} color={FAB_COLOR} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     accessibilityRole="button"
@@ -546,7 +623,7 @@ export const DeckDetailScreen: React.FC = () => {
                       paddingVertical: 6,
                       paddingHorizontal: 8,
                       borderRadius: 8,
-                      borderWidth: 1,
+                      borderWidth: StyleSheet.hairlineWidth * 2,
                       borderColor: colors.border,
                       backgroundColor: colors.background,
                       minWidth: 36,
@@ -555,7 +632,7 @@ export const DeckDetailScreen: React.FC = () => {
                       justifyContent: "center"
                     }}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#ff3b30" />
+                    <MaterialIcons name="delete-outline" size={20} color="#ff3b30" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -593,8 +670,8 @@ export const DeckDetailScreen: React.FC = () => {
                     paddingVertical: 10,
                     paddingHorizontal: 10,
                     borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: FAB_COLOR,
+                    borderWidth: StyleSheet.hairlineWidth * 2,
+                    borderColor: colors.border,
                     backgroundColor: colors.background,
                     minWidth: 44,
                     minHeight: 44,
@@ -602,7 +679,7 @@ export const DeckDetailScreen: React.FC = () => {
                     justifyContent: "center"
                   }}
                 >
-                  <Ionicons name="pencil" size={22} color={FAB_COLOR} />
+                  <MaterialIcons name="edit" size={24} color={FAB_COLOR} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -612,7 +689,7 @@ export const DeckDetailScreen: React.FC = () => {
                     paddingVertical: 10,
                     paddingHorizontal: 10,
                     borderRadius: 8,
-                    borderWidth: 1,
+                    borderWidth: StyleSheet.hairlineWidth * 2,
                     borderColor: colors.border,
                     backgroundColor: colors.background,
                     minWidth: 44,
@@ -621,7 +698,7 @@ export const DeckDetailScreen: React.FC = () => {
                     justifyContent: "center"
                   }}
                 >
-                  <Ionicons name="trash-outline" size={22} color="#ff3b30" />
+                  <MaterialIcons name="delete-outline" size={24} color="#ff3b30" />
                 </TouchableOpacity>
               </View>
             </View>

@@ -1,8 +1,10 @@
 import "react-native-gesture-handler";
 import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Platform, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Platform, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { DarkTheme, DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StorageProviderContext, createAsyncStorageProvider } from "./storageContext";
@@ -85,7 +87,25 @@ function NavigationRoot() {
 
 function AppShell() {
   const { colors } = useAppTheme();
+  const [iconsLoaded] = useFonts(MaterialIcons.font);
   const storageProvider = React.useMemo(() => createAsyncStorageProvider(), []);
+
+  if (!iconsLoaded) {
+    return (
+      <SafeAreaProvider>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: colors.background
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>

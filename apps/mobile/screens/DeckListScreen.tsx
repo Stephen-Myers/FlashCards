@@ -14,7 +14,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useStorage } from "../storageContext";
 import { useAppTheme } from "../themeContext";
 import { usePreferences } from "../preferencesContext";
@@ -180,9 +180,9 @@ export const DeckListScreen: React.FC = () => {
                 justifyContent: "center"
               }}
             >
-              <Ionicons
-                name={deckListDeleteMode ? "trash" : "pencil"}
-                size={22}
+              <MaterialIcons
+                name={deckListDeleteMode ? "delete" : "edit"}
+                size={24}
                 color={deckListDeleteMode ? DESTRUCTIVE_RED : FAB_COLOR}
               />
             </TouchableOpacity>

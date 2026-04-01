@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   useWindowDimensions
 } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useAppTheme, THEME_ACCENTS } from "../themeContext";
 import { usePreferences } from "../preferencesContext";
 
@@ -43,9 +43,9 @@ export const SettingsScreen: React.FC = () => {
         }}
       >
         <Text style={{ fontSize: 17, color: colors.text }}>Themes</Text>
-        <Ionicons
-          name={themesOpen ? "chevron-down" : "chevron-forward"}
-          size={22}
+        <MaterialIcons
+          name={themesOpen ? "expand-more" : "chevron-right"}
+          size={24}
           color={colors.textSecondary}
           style={{ marginLeft: 8 }}
         />
